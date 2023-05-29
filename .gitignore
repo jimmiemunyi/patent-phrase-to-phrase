@@ -1,0 +1,79 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+*.dylib
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+ENV/
+
+# macOS-specific files
+.DS_Store
+
+# Jupyter Notebook checkpoints and metadata
+.ipynb_checkpoints/
+*.ipynb-meta
+
+# PyCharm IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+*.log
+
+# Spyder IDE files
+.spyderproject
+.spyproject
+
+# VS Code IDE files
+.vscode/
+*.code-workspace
+
+# Sublime Text project files
+*.sublime-project
+*.sublime-workspace
+
+# Anaconda environment files
+.env
+
+# Compiled Python modules
+*.pyc
+*.pyo
+
+# Test coverage results
+.coverage
+htmlcov/
+
+# Logs
+log/
+logs/
+
+# Ignore generated files in Django framework
+*.log
+*.pot
+*.pyc
+db.sqlite3
+media/
+
+# Ignore pipenv virtual environment
+.Python
+pipfile.lock
+
+# project specific
+dataset/
+outputs/

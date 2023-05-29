@@ -1,0 +1,5 @@
+data:
+  path: dataset
+
+train:
+  checkpoint: microsoft/deberta-v3-small
