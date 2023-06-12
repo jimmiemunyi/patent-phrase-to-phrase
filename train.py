@@ -19,13 +19,11 @@ from datasets import Dataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers.data.data_collator import default_data_collator
 
-import torch
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import LinearLR
 from torchmetrics import PearsonCorrCoef
 from composer.models.huggingface import HuggingFaceModel
 from composer import Trainer
-from composer.metrics import CrossEntropy
 
 
 # ignoring warnings
@@ -130,8 +128,7 @@ def train(cfg: DictConfig):
     composer_model = HuggingFaceModel(
         model=model,
         tokenizer=tokenizer,
-        # metrics=[CrossEntropy(), pears_corr],
-        eval_metrics=[CrossEntropy(), pears_corr],
+        metrics=[pears_corr],
         use_logits=True,
     )
     # setup optimizer and scheduler
@@ -164,13 +161,7 @@ def train(cfg: DictConfig):
     # training the model
     logger.info("Training the model")
     trainer.fit()
-    # with torch.no_grad():
-    #     batch = {k: v.to("cuda") for k, v in batch.items()}
-    #     outputs = model(**batch)
-    #     logits = outputs.logits
-    # print(logits.shape)
-    # print(batch["labels"].shape)
-    # print(pears_corr.to("cuda")(logits, batch["labels"]))
+    print(trainer.state.eval_metric_values)
 
 
 if __name__ == "__main__":
