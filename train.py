@@ -145,7 +145,10 @@ def train(cfg: DictConfig):
     )
     print(train_dds)
     print("Checking if the dataset lengths are similar")
-    print(train_dds["train"][0]["input_ids"] == train_dds["train"][1]["input_ids"])
+    print(
+        len(train_dds["train"][0]["input_ids"])
+        == len(train_dds["train"][1]["input_ids"])
+    )
 
     # creating PyTorch dataloaders
     logger.info("Creating PyTorch dataloaders")
