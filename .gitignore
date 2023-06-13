@@ -77,3 +77,4 @@ pipfile.lock
 # project specific
 dataset/
 outputs/
+wandb/

@@ -2,9 +2,12 @@ data:
   path: dataset
 
 train:
+  run_name: False
   checkpoint: microsoft/deberta-v3-small
   batch_size: 64
   lr: 8e-5
   wd: 0.01
-  val_size: 0.2
+  val_size: 0.25
   max_duration: "4ep"
+
+create_csv: False
