@@ -21,8 +21,8 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers.data.data_collator import default_data_collator
 
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import LinearLR, OneCycleLR
-from torchmetrics import PearsonCorrCoef
+from torch.optim.lr_scheduler import OneCycleLR
+from torchmetrics import PearsonCorrCoef, MeanSquaredError
 from composer.models.huggingface import HuggingFaceModel
 from composer.loggers import WandBLogger
 from composer import Trainer
@@ -37,9 +37,22 @@ logger = colorlog.getLogger("TRAIN")
 logger.setLevel(colorlog.INFO)
 
 
-def process_df(df: pd.DataFrame, sep_token, train: bool = True):
+def process_df(df: pd.DataFrame, sep_token, tokenizer, train: bool = True):
     df["section"] = df.context.str[0]
-    df["input"] = df.context + sep_token + df.anchor + sep_token + df.target
+    df["sectok"] = "[" + df.section + "]"
+    sectoks = list(df.sectok.unique())
+    print(f"Section Tokens: {sectoks}")
+    if train:
+        tokenizer.add_special_tokens({"additional_special_tokens": sectoks})
+    df["input"] = (
+        df.sectok
+        + sep_token
+        + df.context
+        + sep_token
+        + df.anchor.str.lower()
+        + sep_token
+        + df.target
+    )
     dataset = datasets.Dataset.from_pandas(df)
     if train:
         dataset = dataset.rename_columns({"score": "labels"})
@@ -98,22 +111,31 @@ def train(cfg: DictConfig):
 
     # processing the dataset
     logger.info("Processing the dataset")
-    train_ds = process_df(train_df, sep_token)
-    eval_ds = process_df(test_df, sep_token, train=False)
+    train_ds = process_df(train_df, sep_token, tokenizer)
+    eval_ds = process_df(test_df, sep_token, tokenizer, train=False)
     print(train_ds[0])
+
+    print(f"Tokenizer Special Tokens: {tokenizer.all_special_tokens}")
 
     # tokenizing the dataset
     logger.info("Tokenizing the dataset")
+    inps = "anchor", "target", "context"
+    # TODO: Clean up this section
     tokenize = partial(tokenize_func, tokenizer=tokenizer)
-    train_tok_ds = train_ds.map(tokenize, batched=True, batch_size=None)
-    eval_tok_ds = eval_ds.map(tokenize, batched=True, batch_size=None)
-    print(train_tok_ds)
-    print(
-        f"""Sample Input :{train_tok_ds[0]["input"]}    
-        \nSample Input Ids: {train_tok_ds[0]["input_ids"]}
-        \nSample Attention Mask: {train_tok_ds[0]["attention_mask"]}
-        \nSample Label: {train_tok_ds[0]["labels"]}"""
+    train_tok_ds = train_ds.map(
+        tokenize,
+        batched=True,
+        batch_size=None,
+        remove_columns=inps + ("id", "section"),
     )
+    eval_tok_ds = eval_ds.map(
+        tokenize,
+        batched=True,
+        batch_size=None,
+        remove_columns=inps + ("id", "section"),
+    )
+    print("Sample tokenized dataset")
+    print(train_tok_ds[0])
 
     # splitting the dataset
     trn_idxs, val_idxs = create_val_split(train_df, val_prop=cfg.train.val_size)
@@ -123,8 +145,7 @@ def train(cfg: DictConfig):
     )
     print(train_dds)
     print("Checking if the dataset lengths are similar")
-    print(len(train_dds["train"][0]["input_ids"]))
-    print(len(train_dds["train"][1]["input_ids"]))
+    print(train_dds["train"][0]["input_ids"] == train_dds["train"][1]["input_ids"])
 
     # creating PyTorch dataloaders
     logger.info("Creating PyTorch dataloaders")
@@ -152,11 +173,15 @@ def train(cfg: DictConfig):
     model = AutoModelForSequenceClassification.from_pretrained(
         cfg.train.checkpoint, num_labels=1
     )
+    model.resize_token_embeddings(len(tokenizer))
     pears_corr = PearsonCorrCoef(num_outputs=1)
+    # mse_metric = LossMetric(loss_function=nn.MSELoss(reduction="sum"))
+    mse_metric = MeanSquaredError()
     composer_model = HuggingFaceModel(
         model=model,
         tokenizer=tokenizer,
         metrics=[pears_corr],
+        eval_metrics=[mse_metric, pears_corr],
         use_logits=True,
     )
     # setup optimizer and scheduler
@@ -167,11 +192,6 @@ def train(cfg: DictConfig):
         eps=1e-6,
         weight_decay=cfg.train.wd,
     )
-    # TODO: Cosine/FitOneCycleLR
-    linear_lr_decay = LinearLR(
-        optimizer, start_factor=1.0, end_factor=0, total_iters=150
-    )
-
     # extracting from 4ep
     epochs = int(cfg.train.max_duration.split("ep")[0])
 
@@ -203,6 +223,7 @@ def train(cfg: DictConfig):
         loggers=[wandb_logger],
         run_name=run_name,
         step_schedulers_every_batch=True,
+        # seed=17,
     )
 
     # training the model
