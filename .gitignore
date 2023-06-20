@@ -78,3 +78,4 @@ pipfile.lock
 dataset/
 outputs/
 wandb/
+cpc-data/
