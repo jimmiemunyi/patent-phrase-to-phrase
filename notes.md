@@ -22,4 +22,4 @@
 - https://wandb.ai/darek/fbck/reports/How-To-Build-an-Efficient-NLP-Model--VmlldzoyNTE5MDEx#adversarial-weight-perturbation-(awp)
 - https://www.kaggle.com/code/nbroad/token-classification-approach-fpe
 - https://www.kaggle.com/competitions/us-patent-phrase-to-phrase-matching/discussion/332707
-- 
+- https://www.kaggle.com/competitions/us-patent-phrase-to-phrase-matching/discussion/332492 - For Token Classification and AWP.
