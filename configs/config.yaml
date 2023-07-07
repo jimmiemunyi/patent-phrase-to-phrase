@@ -1,13 +1,23 @@
 data:
   path: dataset
+  cpc_path: cpc-data
+  sep_token: "[SEP]"
 
 train:
   run_name: False
+  awp: True
   checkpoint: microsoft/deberta-v3-small
-  batch_size: 64
-  lr: 8e-5
+  batch_size: 32
+  lr: 2e-5
   wd: 0.01
   val_size: 0.25
-  max_duration: "4ep"
+  epochs: 5
 
 create_csv: False
+
+gc:
+  clip_value: 1000
+awp:
+  start: 1
+  adv_lr: 1e-4
+  adv_eps: 1e-2
